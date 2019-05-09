@@ -92,7 +92,11 @@ func (a *api) postShorten(w http.ResponseWriter, r *http.Request, params httprou
 		CreatorIP: remoteAddr(r),
 	}
 
-	a.ctx.DB.Create(&link)
+	err = a.ctx.DB.Create(&link).Error
+	if err != nil {
+		a.badRequest(w, r)
+		return
+	}
 
 	enc := json.NewEncoder(w)
 	enc.Encode(apiSuccess(link))

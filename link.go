@@ -6,7 +6,7 @@ import (
 
 type Link struct {
 	gorm.Model `json:"-"`
-	Suffix     string `json:"suffix"`
+	Suffix     string `json:"suffix" gorm:"UNIQUE"`
 	URL        string `json:"url"`
 	CreatorIP  string `json:"-"`
 }
