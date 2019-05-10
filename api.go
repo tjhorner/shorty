@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -28,6 +29,7 @@ type api struct {
 }
 
 func (a *api) route(router *httprouter.Router) {
+	router.GET("/", a.getRoot)
 	router.GET("/:suffix", a.getSuffix)
 	router.POST("/api/shorten", a.postShorten)
 }
@@ -48,6 +50,10 @@ func (a *api) badRequest(w http.ResponseWriter, r *http.Request) {
 	enc.Encode(apiError(errors.New("bad request")))
 }
 
+func (a *api) getRoot(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	http.Redirect(w, r, a.ctx.Config.DefaultRedirect, 302)
+}
+
 func (a *api) getSuffix(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var link Link
 
@@ -65,6 +71,7 @@ func (a *api) postShorten(w http.ResponseWriter, r *http.Request, params httprou
 
 	err := r.ParseForm()
 	if err != nil {
+		log.Println(err)
 		a.internalError(w, r)
 		return
 	}
@@ -82,6 +89,7 @@ func (a *api) postShorten(w http.ResponseWriter, r *http.Request, params httprou
 
 	parsedURL, err := url.ParseRequestURI(longURL)
 	if err != nil {
+		log.Println(err)
 		a.badRequest(w, r)
 		return
 	}
@@ -94,6 +102,7 @@ func (a *api) postShorten(w http.ResponseWriter, r *http.Request, params httprou
 
 	err = a.ctx.DB.Create(&link).Error
 	if err != nil {
+		log.Println(err)
 		a.badRequest(w, r)
 		return
 	}
