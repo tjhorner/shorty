@@ -6,6 +6,6 @@ There's a Docker image on Docker Hub as `tjhorner/shorty`.
 
 This is what I use on horner.tj. For example: https://horner.tj/resume
 
-# LICENSE
+# License
 
 MIT
