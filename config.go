@@ -12,6 +12,8 @@ type config struct {
 	ListenAddress   string
 	DefaultRedirect string
 	DatabasePath    string
+	AdminKey        string
+	Public          bool
 }
 
 func writeDefaultConfig(path string) (*config, error) {
@@ -20,6 +22,8 @@ func writeDefaultConfig(path string) (*config, error) {
 		ListenAddress:   ":8080",
 		DefaultRedirect: "https://google.com",
 		DatabasePath:    "shorty.db3",
+		AdminKey:        "",
+		Public:          true,
 	}
 
 	conf, err := json.MarshalIndent(dc, "", "  ")

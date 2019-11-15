@@ -50,6 +50,14 @@ func (a *api) badRequest(w http.ResponseWriter, r *http.Request) {
 	enc.Encode(apiError(errors.New("bad request")))
 }
 
+func (a *api) unauthorized(w http.ResponseWriter, r *http.Request) {
+	r.Header.Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+
+	enc := json.NewEncoder(w)
+	enc.Encode(apiError(errors.New("unauthorized")))
+}
+
 func (a *api) getRoot(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	http.Redirect(w, r, a.ctx.Config.DefaultRedirect, 302)
 }
@@ -68,6 +76,11 @@ func (a *api) getSuffix(w http.ResponseWriter, r *http.Request, params httproute
 
 func (a *api) postShorten(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+
+	if !a.ctx.Config.Public && r.Header.Get("Authorization") != "Bearer "+a.ctx.Config.AdminKey {
+		a.unauthorized(w, r)
+		return
+	}
 
 	err := r.ParseForm()
 	if err != nil {
@@ -92,6 +105,27 @@ func (a *api) postShorten(w http.ResponseWriter, r *http.Request, params httprou
 		log.Println(err)
 		a.badRequest(w, r)
 		return
+	}
+
+	if a.ctx.Config.AdminKey != "" && r.Header.Get("Authorization") == "Bearer "+a.ctx.Config.AdminKey {
+		var existingLink Link
+		found := !a.ctx.DB.Where("suffix = ?", suffix).First(&existingLink).RecordNotFound()
+
+		if found {
+			existingLink.URL = longURL
+			existingLink.CreatorIP = remoteAddr(r)
+
+			err = a.ctx.DB.Save(&existingLink).Error
+			if err != nil {
+				log.Println(err)
+				a.badRequest(w, r)
+				return
+			}
+
+			enc := json.NewEncoder(w)
+			enc.Encode(apiSuccess(existingLink))
+			return
+		}
 	}
 
 	link := Link{
